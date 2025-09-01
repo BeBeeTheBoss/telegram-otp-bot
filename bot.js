@@ -274,5 +274,6 @@ async function refreshSession() {
 
 setInterval(refreshSession, 30 * 60 * 1000);
 
+console.log("🔥 Bot is listening for messages...");
 // Optionally call immediately
 refreshSession();
