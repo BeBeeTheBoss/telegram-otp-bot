@@ -1,10 +1,12 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
-const TelegramBot = require("node-telegram-bot-api");
-const { wrapper } = require("axios-cookiejar-support");
-const { CookieJar } = require("tough-cookie");
-const { Client } = require("pg");
-require("dotenv").config();
+import axios from "axios";
+import * as cheerio from "cheerio";
+import TelegramBot from "node-telegram-bot-api";
+// import { wrapper } from "axios-cookiejar-support";
+// import { CookieJar } from "tough-cookie";
+import { Client } from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // ===== Telegram Bot setup =====
 const token = process.env.BOT_TOKEN;
@@ -12,17 +14,17 @@ const token = process.env.BOT_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 
 // PostgreSQL client
-// const db = new Client({
-//   connectionString: process.env.DATABASE_URL,
-// });
-// db.connect();
+const db = new Client({
+  connectionString: process.env.DATABASE_URL,
+});
+db.connect();
 
 // ===== In-memory storage for demo =====
 const userPhones = {};
 
 // ===== Axios client with cookie jar =====
-const jar = new CookieJar();
-const client = wrapper(axios.create({ jar }));
+// const jar = new CookieJar();
+// const client = wrapper(axios.create({ jar }));
 
 const opts = {
   reply_markup: {
@@ -64,8 +66,8 @@ bot.on("contact", async (msg) => {
   const phone = msg.contact.phone_number;
   userPhones[chatId] = phone;
 
-  // const isSaved = await saveUser(chatId, phone);
-  // if (!isSaved) return;
+  const isSaved = await saveUser(chatId, phone);
+  if (!isSaved) return;
 
   bot.sendMessage(chatId, `ဖုန်းနံပါတ် share ပေးတဲ့အတွက်ကျေးဇူးတင်ပါတယ်😉`);
 
@@ -88,18 +90,18 @@ bot.on("message", async (msg) => {
 
   const phoneRegex = /^09\d{7,15}$/;
 
-  // const user = await getUser(chatId);
+  const user = await getUser(chatId);
 
-  // if (!user) {
-  //   bot.sendMessage(
-  //     chatId,
-  //     "OTP တောင်းမယ်ဆို သင့်ဖုန်းနံပါတ်ကို အရင်ပို့ပေးပါဦးနော်",
-  //     opts
-  //   );
-  //   return;
-  // }
+  if (!user) {
+    bot.sendMessage(
+      chatId,
+      "OTP တောင်းမယ်ဆို သင့်ဖုန်းနံပါတ်ကို အရင်ပို့ပေးပါဦးနော်",
+      opts
+    );
+    return;
+  }
 
-  // chat["phone"] = user["phone"];
+  chat["phone"] = user["phone"];
 
   if (phoneRegex.test(text)) {
     bot.sendMessage(chatId, `ရှာပေးနေပါတယ် ခဏစောင့်ပေးပါနော်`);
@@ -234,8 +236,8 @@ async function searchOtp(chat, requested_phone) {
         `${requested_phone} အတွက် OTP ရှာလို့မတွေ့ဘူးနော်`
       );
     } else {
-      // const isSaved = await saveRecord(chat, requested_phone);
-      // if (!isSaved) return;
+      const isSaved = await saveRecord(chat, requested_phone);
+      if (!isSaved) return;
       bot.sendMessage(
         chatId,
         `OTP message လေးရပါပြီနော် 😎 :\n\n${otp_message}`
@@ -274,6 +276,6 @@ async function refreshSession() {
 
 setInterval(refreshSession, 30 * 60 * 1000);
 
-console.log("🔥 Bot is listening for messages...");
+console.log("Bot is listening for messages...");
 // Optionally call immediately
 refreshSession();
